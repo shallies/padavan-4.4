@@ -1,0 +1,90 @@
+name: Build K2P K44D50
+
+# 工作流触发条件
+on: 
+  push:
+  pull_request:
+  workflow_dispatch:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: build
+    # 替换新版Ubuntu runner
+    runs-on: ubuntu-22.04
+    if: ${{ !(github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) }}
+    env:
+      build_variant: ${{ matrix.build_variant }}
+      targets: ${{ matrix.targets }}
+      images_dir: /opt/images
+    strategy:
+      matrix:
+        include:
+          - build_variant: "mt7621"
+            targets: "K2P"
+    steps:
+      # checkout v2 升级 v4
+      - name: Checkout source code
+        uses: actions/checkout@v4
+
+      - name: Prepare environment dependencies
+        run: |
+          sudo apt update
+          sudo apt install libtool-bin gperf python3-docutils autopoint gettext p7zip-full fakeroot
+
+      - name: Run shellcheck static check
+        run: sh ./trunk/tools/shellcheck.sh
+
+      - name: Prepare cross toolchain
+        run: |
+          cd toolchain-mipsel
+          sh dl_toolchain.sh
+
+      - name: Start firmware build for all targets
+        run: |
+          cd trunk
+          mkdir -p ${images_dir}
+          for m in $targets; do
+            fakeroot ./build_firmware_ci $m
+            if [ $? = 0 ]; then
+              cp -f images/*.trx ${images_dir}/$m.trx
+            else
+              exit 1
+            fi
+            ./clear_tree_simple >/dev/null 2>&1
+          done
+
+      - name: Compress firmware to 7z archive
+        if: ${{ github.event_name != 'release' && success() }}
+        run: |
+          ls -lh ${images_dir}
+          GIT_VERSION=$(git rev-parse --short=7 HEAD 2>/dev/null)
+          if [ -n "$GIT_VERSION" ]; then
+            image_name=images_${build_variant}_${GIT_VERSION}
+          else
+            image_name=images_${build_variant}
+          fi
+          cd ${images_dir}
+          md5sum *.trx | tee md5sum.txt
+          7z a -mx=9 ${image_name}.7z ./*
+          echo "image_name=${image_name}" >> $GITHUB_ENV
+
+      # upload-artifact v2 升级 v4
+      - name: Upload build artifact
+        if: ${{ github.event_name != 'release' && success() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.image_name }}
+          path: ${{ env.images_dir }}/*.7z
+
+      # 发布上传工具升级至v2最新版
+      - name: Upload firmware to GitHub Release
+        if: ${{ github.event_name == 'release' && success() }}
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ${{ env.images_dir }}/*.trx
+          tag: ${{ github.ref }}
+          overwrite: true
+          file_glob: true
