@@ -1,0 +1,59 @@
+name: Build Pure K2P 5.0
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    env:
+      images_dir: /opt/images
+      TNAME: K2P
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Prepare environment dependencies
+      run: |
+        sudo apt update
+        sudo apt install libtool-bin gperf python3-docutils autopoint gettext p7zip-full fakeroot
+
+    - name: Run shellcheck static check
+      run: sh ./trunk/tools/shellcheck.sh
+
+    - name: Prepare cross toolchain
+      run: |
+        cd toolchain-mipsel
+        sh dl_toolchain.sh
+
+    - name: Start firmware build for all targets
+      run: |
+        cd trunk
+        sed -i "0,/FIRMWARE_BUILDS_REV.*$/s//FIRMWARE_BUILDS_REV=$(date +%Y%m%d)/" versions.inc
+        mkdir -p ${images_dir}
+
+        fakeroot ./build_firmware_ci $TNAME
+        image_name=${images_dir}/$TNAME-4.4-$(date +%Y%m%d-%H%M).trx
+        cp -f images/*.trx ${image_name}
+        ./clear_tree_simple >/dev/null 2>&1
+        echo "image_name=${image_name}" >> $GITHUB_ENV
+
+    # upload-artifact v2 升级 v4
+    - name: Upload build artifact
+      if: ${{ github.event_name != 'release' && success() }}
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ env.image_name }}
+        path: ${{ env.images_dir }}/*.trx
+
+    # 发布上传工具升级至v2最新版
+    - name: Upload firmware to GitHub Release
+      if: ${{ github.event_name == 'release' && success() }}
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: ${{ env.images_dir }}/*.trx
+        tag: ${{ github.ref }}
+        overwrite: true
+        file_glob: true
