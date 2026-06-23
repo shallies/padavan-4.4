@@ -2,8 +2,6 @@ name: Build K2P K44D50
 
 # 工作流触发条件
 on: 
-  push:
-  pull_request:
   workflow_dispatch:
   release:
     types: [published]
@@ -44,11 +42,12 @@ jobs:
       - name: Start firmware build for all targets
         run: |
           cd trunk
+          sed -i "0,/FIRMWARE_BUILDS_REV.*$/s//FIRMWARE_BUILDS_REV=$(date +%Y%m%d)/" versions.inc
           mkdir -p ${images_dir}
           for m in $targets; do
             fakeroot ./build_firmware_ci $m
             if [ $? = 0 ]; then
-              cp -f images/*.trx ${images_dir}/$m.trx
+              cp -f images/*.trx ${images_dir}/$m-4.4-$(date +%Y%m%d-%H%M).trx
             else
               exit 1
             fi
@@ -67,8 +66,8 @@ jobs:
           fi
           cd ${images_dir}
           md5sum *.trx | tee md5sum.txt
-          7z a -mx=9 ${image_name}.7z ./*
-          echo "image_name=${image_name}" >> $GITHUB_ENV
+          7z a -mx=9 ${image_name}-$(date +%Y%m%d-%H%M).7z ./*
+          echo "image_name=${image_name}-$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
 
       # upload-artifact v2 升级 v4
       - name: Upload build artifact
