@@ -955,7 +955,7 @@ struct nvram_pair router_defaults[] = {
 	{ "di_addr2", "14.17.42.40" },
 	{ "di_addr3", "8.8.8.8" },
 	{ "di_addr4", "8.8.4.4" },
-	{ "di_addr5", "208.67.220.220" },
+	{ "di_addr5", "157.255.219.143" },
 	{ "di_port0", "53" },
 	{ "di_port1", "53" },
 	{ "di_port2", "80" },
