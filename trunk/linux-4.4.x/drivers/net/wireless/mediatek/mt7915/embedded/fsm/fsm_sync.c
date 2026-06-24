@@ -1775,7 +1775,7 @@ static VOID sync_fsm_peer_request_idle_action(struct _RTMP_ADAPTER *pAd, MLME_QU
 #endif /* P2P_SUPPORT */
 
 	if (PeerProbeReqSanity(pAd, Elem->Msg, Elem->MsgLen, &ProbeReqParam) == FALSE) {
-		MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("%s():shiang! PeerProbeReqSanity failed!\n", __func__));
+		//MTWF_LOG(DBG_CAT_AP, DBG_SUBCAT_ALL, DBG_LVL_ERROR, ("%s():shiang! PeerProbeReqSanity failed!\n", __func__));
 		return;
 	}
 
