@@ -39,10 +39,10 @@ jobs:
           mkdir -p ${images_dir}
           fakeroot ./build_firmware_ci $TNAME
           if [ $? -eq 0 ]; then  # <--- 优化：= 改为 -eq
-            cp -f images/*.trx ${images_dir}/$TNAME-4.4-$(date +%Y%m%d-%H%M).trx
+            cp -f images/*.trx ${images_dir}/$TNAME-4.4-5.0-$(date +%m%d.%H%M).trx
           fi
           ./clear_tree_simple >/dev/null 2>&1
-          echo "PackageName=$TNAME-4.4-$(date +%Y%m%d-%H%M)" >> $GITHUB_ENV
+          echo "PackageName=$TNAME-4.4-5.0-$(date +%m%d.%H%M)" >> $GITHUB_ENV
 
       # upload-artifact v2 升级 v4
       - name: Upload build artifact
