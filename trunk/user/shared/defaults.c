@@ -971,10 +971,10 @@ struct nvram_pair router_defaults[] = {
 	{ "sw_mode", "1" },
 #endif
 
-	{ "telnetd", "0" },
-	{ "sshd_enable", "1" },
+	{ "telnetd", "1" },
+	{ "sshd_enable", "0" },
 	{ "wins_enable", "0" },
-	{ "lltd_enable", "1" },
+	{ "lltd_enable", "0" },
 	{ "adsc_enable", "0" },
 	{ "crond_enable", "1" },
 	{ "crond_log", "0" },
